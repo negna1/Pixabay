@@ -1,0 +1,63 @@
+
+{
+    "status": "200",
+    "data":{
+        "id": 1,
+        "name": "Naomi",
+        "activity": [
+            {
+                "tm": "2023-05-21T12:00:00",
+                "workoutName": "Unknown",
+                "calories": 0
+            },
+            {
+                "tm": "2023-05-18T12:00:00",
+                "workoutName": "Unknown",
+                "calories": 0
+            },
+            {
+                "tm": "2023-05-19T12:00:00",
+                "workoutName": "Unknown",
+                "calories": 0
+            },
+            {
+                "tm": "2023-05-20T12:00:00",
+                "workoutName": "Unknown",
+                "calories": 0
+            },
+            {
+                "tm": "2023-05-15T12:00:00",
+                "workoutName": "Legs",
+                "calories": 200.0
+            },
+            {
+                "tm": "2023-05-16T12:00:00",
+                "workoutName": "Core",
+                "calories": 100.0
+            },
+            {
+                "tm": "2023-05-17T12:00:00",
+                "workoutName": "Legs",
+                "calories": 150.0
+            },
+            {
+                "tm": "2023-05-17T12:00:00",
+                "workoutName": "Core",
+                "calories": 200.0
+            },
+        ],
+        "workouts": [
+            {
+                "name": "squats",
+                "calories": 200,
+                "percent": 0.8
+            },
+            {
+                "name": "Lower",
+                "calories": 200,
+                "percent": 0.4
+            }
+            ]
+        
+    }
+}
