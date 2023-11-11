@@ -50,21 +50,21 @@ final class PictureDetailsViewModel: PictureDetailsViewModelType {
 extension PictureDetailsViewModel {
     private var idle: [CellType] {
         [
-            CellType.title("Picture Info"),
+            CellType.title(Constant.picInfo),
             .iconWithDescription(photoInfoMode),
-            CellType.title("Author Info"),
+            CellType.title(Constant.authorInfo),
             .iconWithDescription(authorModel),
         ]
     }
 
     private var photoInfoMode: IconAndInfoWidget.Model {
         .init(titles: hit.pictureInfos,
-              imageURLString: hit.largeImageURL ?? "")
+              imageURLString: hit.largeImageURL ?? .empty)
     }
     
     private var authorModel: IconAndInfoWidget.Model {
         .init(titles: hit.userInfos,
-              imageURLString: hit.userImageURL ?? "")
+              imageURLString: hit.userImageURL ?? .empty)
     }
 }
 

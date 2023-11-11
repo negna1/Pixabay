@@ -11,10 +11,9 @@ import Components
 import SnapKit
 import Resolver
 
-
 final class RegistrationViewController: UIViewController {
     private var cancellables: [AnyCancellable] = []
-    private var viewModel: RegistrationViewModelType = Resolver.resolve()
+    private lazy var viewModel: RegistrationViewModelType = Resolver.resolve(args: navigationController)
     private lazy var tableView: UITableView = {
         let table = UITableView()
         table.separatorStyle = .none
@@ -23,13 +22,11 @@ final class RegistrationViewController: UIViewController {
         return table
     }()
     
-    
     private lazy var dataSource = makeDataSource()
     
     override func viewDidLoad() {
         configureUI()
         bind(to: viewModel)
-        
     }
     
     private func configureUI() {

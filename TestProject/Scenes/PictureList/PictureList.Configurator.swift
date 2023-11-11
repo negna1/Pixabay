@@ -11,7 +11,12 @@ import NetworkLayer
 extension Resolver {
     public static func pictureListRegitrationServices() {
         register { PictureListWorker() as PictureListWorkerProtocol }
-        register { PictureListViewModel() as PictureListViewModelType }
-        register { PictureListViewController() }
+//        register { PictureListViewModel() as PictureListViewModelType }
+        register { PictureListViewController()}
+        register { _, args in
+            PictureListViewModel(navigation: args()) as PictureListViewModelType }
+//        register { PictureListRouter() as PictureListRouterProtocol }
+        register { _, args in
+            PictureListRouter(navigation: args()) as PictureListRouterProtocol }
     }
 }

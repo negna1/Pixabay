@@ -14,7 +14,7 @@ import Resolver
 
 final class PictureListViewController: UIViewController {
     private var cancellables: [AnyCancellable] = []
-    private var viewModel: PictureListViewModelType = Resolver.resolve()
+    private lazy var viewModel: PictureListViewModelType = Resolver.resolve(args: self.navigationController)
     private let selection = PassthroughSubject<RegistrationViewController.CellModelType, Never>(
     )
     private lazy var tableView: UITableView = {
@@ -26,27 +26,23 @@ final class PictureListViewController: UIViewController {
         return table
     }()
     
+    private var activityView: UIActivityIndicatorView = {
+        let activityView = UIActivityIndicatorView()
+        activityView.style = .large
+        activityView.translatesAutoresizingMaskIntoConstraints = false
+        return activityView
+    }()
     
     private lazy var dataSource = makeDataSource()
     
     override func viewDidLoad() {
         configureUI()
-        bind(to: viewModel)
-        
-    }
+        bind(to: viewModel)    }
     
     private func configureUI() {
         constrain()
         registerCells()
         tableView.dataSource = dataSource
-    }
-    
-    private func constrain() {
-        self.view.addSubview(tableView)
-        tableView.snp.makeConstraints { make in
-            make.top.equalToSuperview()
-            make.trailing.leading.bottom.equalToSuperview()
-        }
     }
     
     private var classes: [ConfigurableTableCell.Type] {
@@ -57,7 +53,6 @@ final class PictureListViewController: UIViewController {
         classes.forEach({ tableView.register($0.self,
                                              forCellReuseIdentifier: String(describing: $0.self)
         )})
-        
     }
     
     private func bindViewModel(viewModel: PictureListViewModelType) {
@@ -65,6 +60,7 @@ final class PictureListViewController: UIViewController {
     }
     
     private func bind(to viewModel: PictureListViewModelType) {
+        self.activityView.startAnimating() 
         cancellables.forEach { $0.cancel() }
         cancellables.removeAll()
         
@@ -80,12 +76,36 @@ final class PictureListViewController: UIViewController {
         switch state {
         case .idle(let cells):
             update(with: cells, animate: false)
-        case .navigateToDetails(let hit):
-            let vc: PictureDetailsViewController = Resolver.resolve(args: hit)
-            self.navigationController?.pushViewController(vc, animated: true)
+        case .isLoading(let show):
+            DispatchQueue.main.async {
+                show ? self.activityView.startAnimating() :  self.activityView.stopAnimating()
+            }
+        }
+    }
+}
+
+//MARK: - Constraints
+extension PictureListViewController {
+    private func constrain() {
+        constrainTableView()
+        constrainActivityView()
+    }
+    
+    private func constrainTableView() {
+        self.view.addSubview(tableView)
+        tableView.snp.makeConstraints { make in
+            make.top.equalToSuperview()
+            make.trailing.leading.bottom.equalToSuperview()
         }
     }
     
+    private func constrainActivityView() {
+        self.view.addSubview(activityView)
+        activityView.snp.makeConstraints { make in
+            make.centerX.centerY.equalToSuperview()
+            make.height.width.equalTo(100)
+        }
+    }
 }
 
 //MARK: - Data source and reload
@@ -122,4 +142,12 @@ extension PictureListViewController: UITableViewDelegate {
     }
 }
 
-
+extension PictureListViewController{
+    var getTableView: UITableView {
+        tableView
+    }
+    
+    var getDataSource: UITableViewDiffableDataSource<RegistrationViewController.Section,  RegistrationViewController.CellModelType> {
+        dataSource
+    }
+}

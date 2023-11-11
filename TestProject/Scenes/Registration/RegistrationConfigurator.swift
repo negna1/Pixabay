@@ -12,7 +12,9 @@ extension Resolver {
     public static func registerRegitrationServices() {
         defaultScope = .graph
         register { RegistrationWorker() as RegistrationWorkerProtocol }
-        register { RegistrationViewModel() as RegistrationViewModelType }
+//        register { RegistrationViewModel() as RegistrationViewModelType }
+        register { _, args in
+            RegistrationViewModel(navigation: args()) as RegistrationViewModelType }
         register { RegistrationViewController() }
     }
 }

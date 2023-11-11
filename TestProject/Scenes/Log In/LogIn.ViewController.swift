@@ -11,10 +11,11 @@ import Components
 import SnapKit
 import Resolver
 
-
 final class LogInViewController: UIViewController {
     private var cancellables: [AnyCancellable] = []
-    private var viewModel: LogInViewModelType = Resolver.resolve()
+    private lazy var viewModel: LogInViewModelType = Resolver.resolve(args: navigationController)
+    private lazy var dataSource = makeDataSource()
+    
     private lazy var tableView: UITableView = {
         let table = UITableView()
         table.separatorStyle = .none
@@ -22,9 +23,6 @@ final class LogInViewController: UIViewController {
         table.translatesAutoresizingMaskIntoConstraints = false
         return table
     }()
-    
-    
-    private lazy var dataSource = makeDataSource()
     
     override func viewDidLoad() {
         configureUI()
@@ -77,9 +75,6 @@ final class LogInViewController: UIViewController {
         switch state {
         case .idle(let cells):
             update(with: cells, animate: false)
-        case .navigationToAuth:
-            let vc: RegistrationViewController = Resolver.resolve()
-            self.navigationController?.pushViewController(vc, animated: true)
         }
     }
     
@@ -105,5 +100,15 @@ extension LogInViewController {
             snapshot.appendItems(models, toSection: .initial)
             self.dataSource.apply(snapshot, animatingDifferences: animate)
         }
+    }
+}
+
+extension LogInViewController{
+    var getTableView: UITableView {
+        tableView
+    }
+    
+    var getDataSource: UITableViewDiffableDataSource<RegistrationViewController.Section,  RegistrationViewController.CellModelType> {
+        dataSource
     }
 }

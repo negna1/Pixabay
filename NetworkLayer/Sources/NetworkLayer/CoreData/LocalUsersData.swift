@@ -11,7 +11,7 @@ import UIKit
 
 public protocol LocalUsersDataProtocol {
     func fetchRequest() async -> [UsersResponseItem]
-    func saveUser(object: UsersResponseItem) async -> String
+    func saveUser(object: UsersResponseItem) async -> Result<String, ErrorType>
     func getUser(email: String, password: String) async -> Result<String, ErrorType>
 }
 
@@ -72,7 +72,7 @@ extension LocalUsersData {
         }
     }
     
-    public func saveUser(object: UsersResponseItem) async -> String {
+    public func saveUser(object: UsersResponseItem) async -> Result<String, ErrorType> {
         if users == [] { Task { await fetchRequest() } }
         let entity =
         NSEntityDescription.entity(forEntityName: Constant.EntityName,
@@ -85,15 +85,16 @@ extension LocalUsersData {
         user.setValue(object.password, forKeyPath: "password")
         user.setValue(object.birthDate, forKeyPath: "birthDate")
         if usersValues.contains(where: {$0.mail == object.mail}) {
-            return "This user already exist"
+            return Result<String, ErrorType>.failure(.error("User already exist"))
         }
+        
         do {
             try managedContext.save()
             users.append(user)
-            return "User success"
+            return .success("Success")
         } catch let error as NSError {
             print("Could not save. \(error), \(error.userInfo)")
-            return "Could not saved"
+            return Result<String, ErrorType>.failure(.error("Could not saved"))
         }
     }
     

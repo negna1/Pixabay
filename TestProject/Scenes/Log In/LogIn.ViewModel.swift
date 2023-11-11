@@ -13,6 +13,7 @@ import NetworkLayer
 
 protocol LogInViewModelType {
     func transform(input: LogInViewModelInput) -> LogInViewModelOutput
+    func getStateSubject() -> PassthroughSubject<LogInState, Never> 
 }
 
 struct LogInViewModelInput {
@@ -22,7 +23,6 @@ typealias LogInViewModelOutput = AnyPublisher<LogInState, Never>
 
 enum LogInState: Equatable {
     case idle([RegistrationViewController.CellModelType])
-    case navigationToAuth
 }
 
 final class LogInViewModel: LogInViewModelType {
@@ -32,15 +32,15 @@ final class LogInViewModel: LogInViewModelType {
     private var stateSubject = PassthroughSubject<LogInState, Never>()
     private var currentDataSource: [CellType] = []
     @Injected private var loginWorker: LogInWorkerProtocol
-    var users = [UsersResponseItem]()
-    private var mail: String = ""
-    private var password: String = ""
+    private var mail: String = .empty
+    private var password: String = .empty
     private var needErrorState: Bool = false
+    private var router: LogInRouterProtocol
     
     private var isValid: Bool { password.isValidPassword && mail.isValidEmail }
     // MARK: -  Action handlers
     private lazy var registerAction: ((PrimaryButtonTableCell) -> ()) = { button in
-        self.stateSubject.send(.navigationToAuth)
+        self.router.navigateToRegistration()
     }
     
     private lazy var logInAction: ((PrimaryButtonTableCell) -> ()) = { button in
@@ -53,7 +53,9 @@ final class LogInViewModel: LogInViewModelType {
         self.callLoginService()
     }
     
-    public init() {}
+    public init(navigation: UINavigationController?) {
+        self.router = Resolver.resolve(args: navigation)
+    }
     
     func transform(input: LogInViewModelInput) -> LogInViewModelOutput {
         cancellables.forEach { $0.cancel() }
@@ -70,10 +72,10 @@ final class LogInViewModel: LogInViewModelType {
         Task {
             let result = await self.loginWorker.loginUser(mail:self.mail, password: self.password)
             switch result {
-            case .success(let success):
-                print(success)
+            case .success(_):
+                router.navigateToPictureList()
             case .failure(let failure):
-                print(failure.localizedDescription)
+                stateSubject.send(.idle(idle + [.title(failure.description ?? failure.localizedDescription)]))
             }
         }
     }
@@ -82,18 +84,18 @@ final class LogInViewModel: LogInViewModelType {
 // MARK: - Cell Models
 extension LogInViewModel {
     private var idle: [CellType] {
-        [CellType.title("Log In"),
+        [CellType.title(Constant.header),
          CellType.textField(mailModel),
          CellType.textField(passwordModel),
          CellType.button( authorizationButton),
-         CellType.title("OR"),
+         CellType.title(Constant.or),
          CellType.button(buttonModel)
         ]
     }
     
     private var mailModel: BorderedTextField.Model {
         let errorText = !needErrorState ? nil :
-        mail.isValidEmail ? nil : "Please write correct email"
+        mail.isValidEmail ? nil : Constant.mailWarning
         return .init(textType: .email,
                      textToWrite: mail,
                      errorText: errorText ) { model in
@@ -103,7 +105,7 @@ extension LogInViewModel {
     
     private var passwordModel: BorderedTextField.Model {
         let errorText = !needErrorState ? nil :
-        password.isValidPassword ? nil : "Password should contain more than 6 and less than 12 characters"
+        password.isValidPassword ? nil : Constant.passwordWarning
         return .init(textType: .password,
                      textToWrite: password,
                      errorText: errorText) { model in
@@ -112,10 +114,15 @@ extension LogInViewModel {
     }
     
     private var buttonModel: PrimaryButtonTableCell.CellModel {
-        .init(title: "Register", tap: registerAction)
+        .init(title: Constant.registration, tap: registerAction)
     }
     
     private var authorizationButton: PrimaryButtonTableCell.CellModel {
-        .init(title: "Log In ", tap: logInAction)
+        .init(title: Constant.header, tap: logInAction)
     }
+    
+    func getStateSubject() -> PassthroughSubject<LogInState, Never> {
+        return stateSubject
+    }
+    
 }

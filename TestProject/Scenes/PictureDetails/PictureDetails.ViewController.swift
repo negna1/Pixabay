@@ -114,4 +114,12 @@ extension PictureDetailsViewController {
     }
 }
 
-
+extension PictureDetailsViewController{
+    var getTableView: UITableView {
+        tableView
+    }
+    
+    var getDataSource: UITableViewDiffableDataSource<RegistrationViewController.Section,  RegistrationViewController.CellModelType> {
+        dataSource
+    }
+}

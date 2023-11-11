@@ -17,4 +17,6 @@ extension String {
     var isValidPassword: Bool {
         self.count < 12 && self.count >= 6
     }
+    
+    static let empty = ""
 }

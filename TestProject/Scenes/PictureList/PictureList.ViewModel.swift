@@ -23,7 +23,7 @@ typealias PictureListViewModelOutput = AnyPublisher<PictureListState, Never>
 
 enum PictureListState: Equatable {
     case idle([RegistrationViewController.CellModelType])
-    case navigateToDetails(Hit)
+    case isLoading(Bool)
 }
 
 final class PictureListViewModel: PictureListViewModelType {
@@ -33,9 +33,14 @@ final class PictureListViewModel: PictureListViewModelType {
     private var stateSubject = PassthroughSubject<PictureListState, Never>()
     private var currentDataSource: [CellType] = []
     @Injected private var pictureListWorker: PictureListWorkerProtocol
+    private var router: PictureListRouterProtocol
+    
+    
     private var picAndAuthors: [PicResponse.ImageAndUser] = []
     private var hits: [Hit] = []
-    public init() {}
+    public init(navigation: UINavigationController?) {
+        self.router = Resolver.resolve(args: navigation)
+    }
     
     func transform(input: PictureListViewModelInput) -> PictureListViewModelOutput {
         cancellables.forEach { $0.cancel() }
@@ -53,23 +58,33 @@ final class PictureListViewModel: PictureListViewModelType {
         Task {
             let result = await self.pictureListWorker.getImages()
             switch result {
-            case .success(let success):
-                self.hits = success.hits ?? []
-                self.picAndAuthors = success.imageAndTitleArray
-                self.stateSubject.send(.idle(idle))
+            case .success(let response):
+                capturePicturesSuccess(response: response)
             case .failure(let failure):
-                print(failure.localizedDescription)
+                capturePicturesFail(failure: failure)
             }
         }
     }
     
+    private func capturePicturesSuccess(response: PicResponse) {
+        stateSubject.send(.isLoading(false))
+        hits = response.hits ?? []
+        picAndAuthors = response.imageAndTitleArray
+        stateSubject.send(.idle(idle))
+    }
+    
+    private func capturePicturesFail(failure: ErrorType) {
+        stateSubject.send(.isLoading(false))
+        let cellModels: [CellType] = [.title(failure.description ?? failure.localizedDescription)]
+        self.stateSubject.send(.idle(cellModels))
+    }
+    
     private func selectionSink(input: PictureListViewModelInput) {
         input.selection.sink { cellType in
-            print(cellType)
             switch cellType {
             case .imageWithTitle(let imageWithAuthor):
                 guard let hit = self.hits.filter({$0.id == imageWithAuthor.id}).first else { return }
-                self.stateSubject.send(.navigateToDetails(hit))
+                self.router.navigateToDetails(hit: hit)
             default:
                 break
             }
@@ -80,8 +95,7 @@ final class PictureListViewModel: PictureListViewModelType {
 // MARK: - Cell Models
 extension PictureListViewModel {
     private var idle: [CellType] {
-        [
-         CellType.title("Picture list")] + models
+        [CellType.title(Constant.header)] + models
     }
     
     private var models: [CellType] {

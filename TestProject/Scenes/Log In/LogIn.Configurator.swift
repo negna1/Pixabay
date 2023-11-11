@@ -13,7 +13,11 @@ extension Resolver {
         defaultScope = .graph
         register { LocalUsersData() as LocalUsersDataProtocol }
         register { LogInWorker() as LogInWorkerProtocol }
-        register { LogInViewModel() as LogInViewModelType }
+       // register { LogInViewModel() as LogInViewModelType }
+        register { _, args in
+            LogInViewModel(navigation: args()) as LogInViewModelType }
+        register { _, args in
+            LogInRouter(navigation: args()) as LogInRouterProtocol }
         register { LogInViewController() }
     }
 }

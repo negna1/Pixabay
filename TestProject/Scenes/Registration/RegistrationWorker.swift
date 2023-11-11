@@ -10,7 +10,7 @@ import Resolver
 import Foundation
 
 protocol RegistrationWorkerProtocol {
-    func saveUser(mail: String, password: String, date: Date?) async -> String
+    func saveUser(mail: String, password: String, date: Date?) async -> Result<String, ErrorType>
 }
 
 final class RegistrationWorker: RegistrationWorkerProtocol {
@@ -18,7 +18,7 @@ final class RegistrationWorker: RegistrationWorkerProtocol {
     
     public init() {}
     
-    func saveUser(mail: String, password: String, date: Date?) async -> String {
+    func saveUser(mail: String, password: String, date: Date?) async -> Result<String, ErrorType> {
         let user = UsersResponseItem(id: UUID().uuidString, mail: mail, password: password, birthDate: date)
         return await localUserService.saveUser(object: user)
     }

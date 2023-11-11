@@ -13,11 +13,10 @@ import NetworkLayer
 
 protocol RegistrationViewModelType {
     func transform(input: RegistrationViewModelInput) -> RegistrationViewModelOutput
+    func getStateSubject() -> PassthroughSubject<RegistrationState, Never>
 }
 
-struct RegistrationViewModelInput {
-    
-}
+struct RegistrationViewModelInput {}
 
 typealias RegistrationViewModelOutput = AnyPublisher<RegistrationState, Never>
 
@@ -31,18 +30,18 @@ final class RegistrationViewModel: RegistrationViewModelType {
     private var stateSubject = PassthroughSubject<RegistrationState, Never>()
     @Injected private var mainWorker: RegistrationWorkerProtocol
     
-    private var mail: String = ""
-    private var password: String = ""
+    private var mail: String = .empty
+    private var password: String = .empty
     private var birthDate: Date? = nil
     private var needErrorState: Bool = false
-    
+    private var router: LogInRouterProtocol
     private var isValid: Bool { password.isValidPassword && mail.isValidEmail }
     // MARK: -  Action handlers
     private lazy var registerAction: ((PrimaryButtonTableCell) -> ()) = { button in
         self.needErrorState = true
         guard self.isValid ,
               let _ = self.birthDate else {
-             self.stateSubject.send(.idle(self.idleVar))
+            self.stateSubject.send(.idle(self.idle))
             return
         }
         self.callRegister()
@@ -52,13 +51,15 @@ final class RegistrationViewModel: RegistrationViewModelType {
         self.birthDate = date
     }
     
-    public init() {}
+    public init(navigation: UINavigationController?) {
+        self.router = Resolver.resolve(args: navigation)
+    }
     
     func transform(input: RegistrationViewModelInput) -> RegistrationViewModelOutput {
         cancellables.forEach { $0.cancel() }
         cancellables.removeAll()
-       
-        let idle: RegistrationViewModelOutput = Just(.idle(idleVar))
+        
+        let idle: RegistrationViewModelOutput = Just(.idle(idle))
             .setFailureType(to: Never.self)
             .eraseToAnyPublisher()
         
@@ -67,48 +68,65 @@ final class RegistrationViewModel: RegistrationViewModelType {
     
     private func callRegister() {
         Task {
-            await self.mainWorker.saveUser(mail: self.mail,
-                                     password: self.password,
-                                     date: birthDate)
+            let response = await self.mainWorker.saveUser(mail: self.mail,
+                                                          password: self.password,
+                                                          date: birthDate)
+            switch response {
+            case .success(_):
+                router.navigateToPictureList()
+            case .failure(let failure):
+                stateSubject.send(.idle(idle + [.title(failure.description ?? failure.localizedDescription)]))
+            }
         }
     }
 }
 
 // MARK: - Cell Models
 extension RegistrationViewModel {
-    private var idleVar: [CellType] {
-        [CellType.title("Registration"),
+    private var idle: [CellType] {
+        [CellType.title(Constant.header),
          CellType.textField(mailModel),
          CellType.textField(passwordModel),
-         CellType.datePicker(.init(minAge: 18,
-                                   maxAge: 88,
-                                   hasError: birthDate == nil,
-                                   dateChanged: dateAction)),
+         CellType.datePicker(dateModel),
          CellType.button(buttonModel)
         ].compactMap({$0})
     }
     
+    private var dateModel: DatePickerTableCell.CellModel {
+        let hasError = !needErrorState ? false :
+        birthDate == nil
+        return .init(minAge: Constant.minAge,
+                     maxAge: Constant.maxAge,
+                     hasError: hasError,
+                     dateChanged: dateAction)
+    }
+    
     private var mailModel: BorderedTextField.Model {
         let errorText = !needErrorState ? nil :
-        mail.isValidEmail ? nil : "Please write correct email"
+        mail.isValidEmail ? nil : Constant.mailWarning
         return .init(textType: .email,
-              textToWrite: mail,
-              errorText: errorText ) { model in
+                     textToWrite: mail,
+                     errorText: errorText ) { model in
             self.mail = model.text
         }
     }
     
     private var passwordModel: BorderedTextField.Model {
         let errorText = !needErrorState ? nil :
-        password.isValidPassword ? nil : "Password should contain more than 6 and less than 12 characters"
+        password.isValidPassword ? nil : Constant.passwordWarning
         return .init(textType: .password,
-              textToWrite: password,
-              errorText: errorText) { model in
+                     textToWrite: password,
+                     errorText: errorText) { model in
             self.password = model.text
         }
     }
     
     private var buttonModel: PrimaryButtonTableCell.CellModel {
-        .init(title: "Register", tap: registerAction)
+        .init(title: Constant.header, tap: registerAction)
     }
+    
+    func getStateSubject() -> PassthroughSubject<RegistrationState, Never> {
+        return stateSubject
+    }
+    
 }
