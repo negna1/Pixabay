@@ -10,6 +10,7 @@ import CoreData
 import UIKit
 
 public protocol LocalUsersDataProtocol {
+    func fetchAndRemove(id: String)
     func fetchRequest() async -> [UsersResponseItem]
     func saveUser(object: UsersResponseItem) async -> Result<String, ErrorType>
     func getUser(email: String, password: String) async -> Result<String, ErrorType>
@@ -115,6 +116,25 @@ extension LocalUsersData {
             users = try managedContext.fetch(fetchRequest)
             users.forEach({managedContext.delete($0)})
             try managedContext.save()
+        } catch let error as NSError {
+            print("Could not fetch. \(error), \(error.userInfo)")
+        }
+    }
+    
+    public func fetchAndRemove(id: String) {
+        let fetchRequest =
+        NSFetchRequest<NSManagedObject>(entityName: Constant.EntityName)
+        
+        do {
+            users = try managedContext.fetch(fetchRequest)
+            for obj in users {
+                let name = obj.value(forKey: "id") as? String
+                if name == id {
+                    managedContext.delete(obj)
+                    try managedContext.save()
+                    break
+                }
+            }
         } catch let error as NSError {
             print("Could not fetch. \(error), \(error.userInfo)")
         }

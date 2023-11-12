@@ -18,10 +18,23 @@ final class NetworkLayerTests: XCTestCase {
     
     func testCoreData() throws {
         let coreData = LocalUsersData()
-        
+        coreData.fetchAndRemove(id: "id")
         Task {
             let resp = await coreData.saveUser(object: .init(id: "id"))
-            XCTAssertEqual(resp, "User success")
+            switch resp {
+            case .success(let success):
+                XCTAssertEqual(success, "User success")
+            case .failure(_):
+                XCTAssertFalse(true)
+            }
+        }
+
+    }
+    
+    func testUsers() {
+        let coreData = LocalUsersData()
+
+        Task {
             let users = await coreData.fetchRequest()
             XCTAssertEqual(users.first?.id, "id")
         }
@@ -30,7 +43,7 @@ final class NetworkLayerTests: XCTestCase {
     func testInternetError() throws {
         let network = NetworkLayer(reachebility: ReachebilityMock())
         Task {
-            let error = await network.fetchAsync(for: .init(components: .init()), with: CryptoPriceResponse.self)
+            let error = await network.fetchAsync(for: .init(components: .init()), with: ExampleModels.self)
             switch error {
             case .success(_):
                 XCTAssert(false)
