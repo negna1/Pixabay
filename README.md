@@ -13,6 +13,11 @@ because extensions of URLRequest, URLComponent and URLQuery, user can use enum c
   Because of those enums network layer know about url path and query keys
   Pros - 
   It's very easy to use, pass some arguments, enums are safe and fast. 
+NetworkLayer also know about coreData model and uses CoreData class. There is some warnings for coredata but newly released SwiftData will change that :)
+  Cons - 
+  Because of those core data network layer knows about models
+  Pros - 
+  Core data is kind of back end staff because it uses persistent data and it would be better to be in networklayer, also using is better in networkLayer.
 
 # Packages - Components
 Components package is key for project UI. It knows about generic table view protocols, it uses components and those components are used in tableViewCell.
